@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String           @id @default(uuid())
+  email        String           @unique
+  passwordHash String
+  createdAt    DateTime         @default(now())
+  products     TrackedProduct[]
+  notifications Notification[]
+}
+
+model TrackedProduct {
+  id                  String          @id @default(uuid())
+  userId              String
+  user                User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  url                 String
+  domain              String
+  name                String
+  selector            String
+  targetPriceCents    Int
+  currentPriceCents   Int?
+  currency            String          @default("BRL")
+  checkIntervalMinutes Int            @default(60)
+  isActive            Boolean         @default(true)
+  lastCheckedAt       DateTime?
+  createdAt           DateTime        @default(now())
+  priceChecks         PriceCheck[]
+  notifications       Notification[]
+
+  @@index([isActive, lastCheckedAt])
+}
+
+model PriceCheck {
+  id               String         @id @default(uuid())
+  trackedProductId String
+  trackedProduct   TrackedProduct @relation(fields: [trackedProductId], references: [id], onDelete: Cascade)
+  priceCents       Int?
+  success          Boolean
+  errorMessage     String?
+  checkedAt        DateTime       @default(now())
+
+  @@index([trackedProductId, checkedAt])
+}
+
+model Notification {
+  id               String         @id @default(uuid())
+  userId           String
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trackedProductId String
+  trackedProduct   TrackedProduct @relation(fields: [trackedProductId], references: [id], onDelete: Cascade)
+  priceCents       Int
+  status           String         @default("pending")
+  sentAt           DateTime?
+  createdAt        DateTime       @default(now())
+
+  @@index([trackedProductId])
+}
