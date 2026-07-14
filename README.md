@@ -6,7 +6,7 @@ Serviço de monitoramento de preço orientado a fila. Você cadastra um produto 
 
 Um cron que itera todos os produtos numa única execução não escala (uma trava lenta ou um site fora do ar bloqueia os outros) e não tem retry/backoff nativo. Aqui:
 
-- Uma única **fila `scheduler`** roda um repeatable job a cada `SCHEDULER_INTERVAL_MS` e faz *fan-out*: busca produtos vencidos e enfileira um job por produto na fila `price-check` — em vez de um repeatable job por produto (não escala em memória do Redis).
+- Uma única **fila `scheduler`** roda um repeatable job a cada `SCHEDULER_INTERVAL_MS` e faz _fan-out_: busca produtos vencidos e enfileira um job por produto na fila `price-check` — em vez de um repeatable job por produto (não escala em memória do Redis).
 - A **fila `price-check`** processa cada produto isoladamente: se falhar (site fora do ar, seletor quebrado), o BullMQ reagenda sozinho com backoff exponencial (5 tentativas). Um `jobId` fixo (`check-<id>`) evita duplicar o mesmo produto na fila enquanto ele ainda está pendente.
 - Um **throttle por domínio** (Redis `SET NX PX`) garante espaçamento mínimo entre requisições ao mesmo domínio, mesmo com vários workers rodando em paralelo — sem isso, dá pra derrubar um site de terceiro com concorrência.
 - A **fila `notify`** é separada da `price-check` de propósito: se o provedor de e-mail cair, isso não deve travar nem re-executar verificações de preço.
@@ -56,9 +56,3 @@ npm test
 ```
 
 Suite cobre: parsing de preço (BRL e US), scraper contra a loja falsa (sucesso e seletor ausente), roundtrip real de fila/worker no BullMQ (sucesso e retry até falhar), e o throttle por domínio contra Redis ao vivo. Não depende de banco — só de Redis.
-
-## Próximos passos sugeridos
-
-- Frontend em React + TS (formulário de produto, gráfico de histórico de preço com Recharts, mesmo padrão do Faturei/Snapbook)
-- Dashboard de filas (Bull Board) pra visualizar jobs pendentes/falhos
-- Deploy: API e workers como dois serviços separados (ex. Render), Redis gerenciado (Upstash/Redis Cloud)
