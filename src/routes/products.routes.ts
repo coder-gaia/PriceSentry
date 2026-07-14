@@ -47,6 +47,14 @@ productsRouter.get("/", async (req: AuthedRequest, res) => {
   res.json(products);
 });
 
+productsRouter.get("/:id", async (req: AuthedRequest, res) => {
+  const product = await prisma.trackedProduct.findFirst({
+    where: { id: req.params.id, userId: req.userId! },
+  });
+  if (!product) return res.status(404).json({ error: "Not found" });
+  res.json(product);
+});
+
 productsRouter.get("/:id/history", async (req: AuthedRequest, res) => {
   const product = await prisma.trackedProduct.findFirst({
     where: { id: req.params.id, userId: req.userId! },
@@ -58,6 +66,19 @@ productsRouter.get("/:id/history", async (req: AuthedRequest, res) => {
     orderBy: { checkedAt: "asc" },
   });
   res.json(history);
+});
+
+productsRouter.get("/:id/notifications", async (req: AuthedRequest, res) => {
+  const product = await prisma.trackedProduct.findFirst({
+    where: { id: req.params.id, userId: req.userId! },
+  });
+  if (!product) return res.status(404).json({ error: "Not found" });
+
+  const notifications = await prisma.notification.findMany({
+    where: { trackedProductId: product.id },
+    orderBy: { createdAt: "desc" },
+  });
+  res.json(notifications);
 });
 
 productsRouter.post("/:id/check-now", async (req: AuthedRequest, res) => {
