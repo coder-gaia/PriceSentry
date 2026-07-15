@@ -17,6 +17,8 @@ export const env = {
   jwtRefreshSecret: required("JWT_REFRESH_SECRET", "dev-refresh-secret-change-me"),
   jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "30d",
   corsOrigin: process.env.CORS_ORIGIN ?? "http://localhost:5173",
+  bullBoardUser: process.env.BULL_BOARD_USER ?? "admin",
+  bullBoardPassword: process.env.BULL_BOARD_PASSWORD ?? "admin",
   smtpHost: process.env.SMTP_HOST ?? "",
   smtpPort: Number(process.env.SMTP_PORT ?? 587),
   smtpUser: process.env.SMTP_USER ?? "",
