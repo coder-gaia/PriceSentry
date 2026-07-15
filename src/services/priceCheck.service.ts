@@ -1,6 +1,7 @@
 import { prisma } from "../lib/prisma";
 import { genericCssScraper } from "../scrapers/genericCssScraper";
 import { notifyQueue } from "../queues/queues";
+import { emitSentinelUpdated } from "../realtime/emitter";
 
 export async function runPriceCheck(trackedProductId: string): Promise<void> {
   const product = await prisma.trackedProduct.findUnique({ where: { id: trackedProductId } });
@@ -40,6 +41,8 @@ export async function runPriceCheck(trackedProductId: string): Promise<void> {
         notificationId: notification.id,
       });
     }
+
+    emitSentinelUpdated(product.userId, product.id);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown scrape error";
     await prisma.$transaction([
@@ -51,6 +54,7 @@ export async function runPriceCheck(trackedProductId: string): Promise<void> {
         data: { lastCheckedAt: new Date() },
       }),
     ]);
+    emitSentinelUpdated(product.userId, product.id);
     throw error;
   }
 }
