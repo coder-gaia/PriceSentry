@@ -4,16 +4,19 @@ import { prisma } from "../lib/prisma";
 import { requireAuth, type AuthedRequest } from "../middleware/auth.middleware";
 import { priceCheckQueue } from "../queues/queues";
 
-export const productsRouter = Router();
-productsRouter.use(requireAuth);
+const SUPPORTED_CURRENCIES = ["BRL", "USD", "GBP", "EUR"] as const;
 
 const createProductSchema = z.object({
   url: z.string().url(),
   name: z.string().min(1),
   selector: z.string().min(1),
   targetPriceCents: z.number().int().positive(),
+  currency: z.enum(SUPPORTED_CURRENCIES).default("BRL"),
   checkIntervalMinutes: z.number().int().min(5).default(60),
 });
+
+export const productsRouter = Router();
+productsRouter.use(requireAuth);
 
 productsRouter.post("/", async (req: AuthedRequest, res) => {
   const parsed = createProductSchema.safeParse(req.body);
@@ -21,7 +24,7 @@ productsRouter.post("/", async (req: AuthedRequest, res) => {
     return res.status(400).json({ error: parsed.error.flatten() });
   }
 
-  const { url, name, selector, targetPriceCents, checkIntervalMinutes } = parsed.data;
+  const { url, name, selector, targetPriceCents, currency, checkIntervalMinutes } = parsed.data;
   const domain = new URL(url).hostname;
 
   const product = await prisma.trackedProduct.create({
@@ -32,6 +35,7 @@ productsRouter.post("/", async (req: AuthedRequest, res) => {
       name,
       selector,
       targetPriceCents,
+      currency,
       checkIntervalMinutes,
     },
   });
