@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { env } from "../config/env";
+import { requireAuth, type AuthedRequest } from "../middleware/auth.middleware";
 
 export const authRouter = Router();
 
@@ -93,4 +94,29 @@ authRouter.post("/refresh", async (req, res) => {
 authRouter.post("/logout", (_req, res) => {
   res.clearCookie(REFRESH_COOKIE_NAME, { path: "/auth" });
   res.status(204).send();
+});
+
+authRouter.get("/me", requireAuth, async (req: AuthedRequest, res) => {
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: req.userId! } });
+  res.json({ id: user.id, email: user.email, webhookUrl: user.webhookUrl, webhookType: user.webhookType });
+});
+
+const webhookSchema = z
+  .object({
+    webhookUrl: z.string().url().nullable(),
+    webhookType: z.enum(["slack", "discord"]).nullable(),
+  })
+  .refine((data) => (data.webhookUrl === null) === (data.webhookType === null), {
+    message: "webhookUrl and webhookType must be set or cleared together",
+  });
+
+authRouter.patch("/webhook", requireAuth, async (req: AuthedRequest, res) => {
+  const parsed = webhookSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+
+  const user = await prisma.user.update({
+    where: { id: req.userId! },
+    data: { webhookUrl: parsed.data.webhookUrl, webhookType: parsed.data.webhookType },
+  });
+  res.json({ id: user.id, email: user.email, webhookUrl: user.webhookUrl, webhookType: user.webhookType });
 });
