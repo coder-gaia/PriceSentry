@@ -25,4 +25,5 @@ export const env = {
   smtpPass: process.env.SMTP_PASS ?? "",
   emailFrom: process.env.EMAIL_FROM ?? "alerts@pricesentry.dev",
   schedulerIntervalMs: Number(process.env.SCHEDULER_INTERVAL_MS ?? 60_000),
+  runWorkersInProcess: process.env.RUN_WORKERS_IN_PROCESS === "true",
 };

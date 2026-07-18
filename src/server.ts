@@ -9,6 +9,7 @@ import { createBullBoardRouter } from "./queues/board";
 import { requireBasicAuth } from "./middleware/basicAuth.middleware";
 import { createServer } from "http";
 import { setupSocketServer } from "./realtime/socketServer";
+import { startAllWorkers } from "./queues/startAllWorkers";
 
 const ADMIN_QUEUES_PATH = "/admin/queues";
 
@@ -31,4 +32,15 @@ app.use("/mock-store", mockStoreRouter);
 
 httpServer.listen(env.port, () => {
   console.log(`PriceSentry API rodando em http://localhost:${env.port}`);
+});
+
+httpServer.listen(env.port, () => {
+  console.log(`PriceSentry API rodando em http://localhost:${env.port}`);
+
+  if (env.runWorkersInProcess) {
+    console.log("RUN_WORKERS_IN_PROCESS=true — iniciando workers dentro do processo da API");
+    startAllWorkers().catch((error) => {
+      console.error("Fatal error starting in-process workers:", error);
+    });
+  }
 });
