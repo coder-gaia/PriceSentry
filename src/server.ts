@@ -29,11 +29,6 @@ app.use("/auth", authRouter);
 app.use("/products", productsRouter);
 app.use("/mock-store", mockStoreRouter);
 
-
-httpServer.listen(env.port, () => {
-  console.log(`PriceSentry API rodando em http://localhost:${env.port}`);
-});
-
 httpServer.listen(env.port, () => {
   console.log(`PriceSentry API rodando em http://localhost:${env.port}`);
 
