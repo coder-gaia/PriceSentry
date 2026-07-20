@@ -11,7 +11,7 @@ import { createServer } from "http";
 import { setupSocketServer } from "./realtime/socketServer";
 import { startAllWorkers } from "./queues/startAllWorkers";
 
-const ADMIN_QUEUES_PATH = "admin/queues";
+const ADMIN_QUEUES_PATH = "/admin/queues";
 
 const app = express();
 
