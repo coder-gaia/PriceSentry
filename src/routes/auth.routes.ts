@@ -29,12 +29,22 @@ function signRefreshToken(userId: string) {
 }
 
 function setRefreshCookie(res: import("express").Response, refreshToken: string) {
+  console.log(`[auth-debug] setting refresh cookie: sameSite=${env.cookieCrossSite ? "none" : "lax"}, secure=${env.cookieCrossSite}, COOKIE_CROSS_SITE env raw value = "${process.env.COOKIE_CROSS_SITE}"`);
   res.cookie(REFRESH_COOKIE_NAME, refreshToken, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    sameSite: env.cookieCrossSite ? "none" : "lax",
+    secure: env.cookieCrossSite,
     path: "/auth",
     maxAge: REFRESH_COOKIE_MAX_AGE_MS,
+  });
+}
+
+function clearRefreshCookie(res: import("express").Response) {
+  res.clearCookie(REFRESH_COOKIE_NAME, {
+    httpOnly: true,
+    sameSite: env.cookieCrossSite ? "none" : "lax",
+    secure: env.cookieCrossSite,
+    path: "/auth",
   });
 }
 

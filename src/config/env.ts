@@ -26,4 +26,5 @@ export const env = {
   emailFrom: process.env.EMAIL_FROM ?? "alerts@pricesentry.dev",
   schedulerIntervalMs: Number(process.env.SCHEDULER_INTERVAL_MS ?? 60_000),
   runWorkersInProcess: process.env.RUN_WORKERS_IN_PROCESS === "true",
+  cookieCrossSite: process.env.COOKIE_CROSS_SITE === "true",
 };
