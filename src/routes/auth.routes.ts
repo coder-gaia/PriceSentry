@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { env } from "../config/env";
 import { requireAuth, type AuthedRequest } from "../middleware/auth.middleware";
+import { fingerprint } from "../lib/debugFingerprint";
 
 export const authRouter = Router();
 
@@ -17,10 +18,12 @@ const REFRESH_COOKIE_NAME = "refresh_token";
 const REFRESH_COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 function signAccessToken(userId: string) {
+  console.log(`[auth-debug] signing access token for userId=${userId}, jwtSecret fingerprint = ${fingerprint(env.jwtSecret)}`);
   return jwt.sign({ sub: userId }, env.jwtSecret, {
     expiresIn: env.jwtExpiresIn as jwt.SignOptions["expiresIn"],
   });
 }
+
 
 function signRefreshToken(userId: string) {
   return jwt.sign({ sub: userId, type: "refresh" }, env.jwtRefreshSecret, {
@@ -84,8 +87,13 @@ authRouter.post("/login", async (req, res) => {
 });
 
 authRouter.post("/refresh", async (req, res) => {
+  console.log(
+    `[auth-debug] /auth/refresh called. raw Cookie header = "${req.headers.cookie ?? "(none)"}", parsed req.cookies = ${JSON.stringify(req.cookies)}, origin = "${req.headers.origin}"`,
+  );
   const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME];
-  if (!refreshToken) return res.status(401).json({ error: "No refresh token" });
+  if (!refreshToken) {
+    return res.status(401).json({ error: "No refresh token" });
+  }
 
   try {
     const payload = jwt.verify(refreshToken, env.jwtRefreshSecret) as { sub: string; type: string };
@@ -94,9 +102,11 @@ authRouter.post("/refresh", async (req, res) => {
     const user = await prisma.user.findUnique({ where: { id: payload.sub } });
     if (!user) return res.status(401).json({ error: "User not found" });
 
-    res.json(await issueSession(res, user));
-  } catch {
-    res.clearCookie(REFRESH_COOKIE_NAME, { path: "/auth" });
+    const session = await issueSession(res, user);
+    res.json(session);
+  } catch (err) {
+    console.log(`[auth-debug] /auth/refresh verify FAILED: ${(err as Error).message}, jwtRefreshSecret fingerprint = ${fingerprint(env.jwtRefreshSecret)}`);
+    clearRefreshCookie(res);
     return res.status(401).json({ error: "Invalid or expired refresh token" });
   }
 });
