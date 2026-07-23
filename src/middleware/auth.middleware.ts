@@ -1,7 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
-import { fingerprint } from "../lib/debugFingerprint";
 
 export type AuthedRequest = Request & { userId?: string };
 
@@ -16,10 +15,7 @@ export function requireAuth(req: AuthedRequest, res: Response, next: NextFunctio
     const payload = jwt.verify(token, env.jwtSecret) as { sub: string };
     req.userId = payload.sub;
     next();
-  } catch (err) {
-    console.log(
-      `[auth-debug] requireAuth verify FAILED: ${(err as Error).message}, jwtSecret fingerprint = ${fingerprint(env.jwtSecret)}, token (first 20 chars) = ${token.slice(0, 20)}`,
-    );
+  } catch {
     return res.status(401).json({ error: "Invalid or expired token" });
-}
+  }
 }
