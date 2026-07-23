@@ -5,7 +5,6 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { env } from "../config/env";
 import { requireAuth, type AuthedRequest } from "../middleware/auth.middleware";
-import { fingerprint } from "../lib/debugFingerprint";
 
 export const authRouter = Router();
 
